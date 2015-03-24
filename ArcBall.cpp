@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "ArcBall.h"
 
 
@@ -33,7 +32,8 @@ void CArcBall::Reset()
 glm::vec3 CArcBall::mapToSphere(glm::ivec2 point)
 {
 	glm::vec3 vector;
-	glm::vec2 tempPoint = point;
+	glm::vec2 tempPoint = glm::vec2((float)point.x, (float)point.y);
+	//glm::vec2 tempPoint = glm::vec2(4.f,5.f);
 
 	//Adjust point coords and scale down to range of [-1 ... 1]
 	tempPoint.x = (tempPoint.x * m_fWidth) - 1.0f;
@@ -101,8 +101,9 @@ void CArcBall::OnMouseMove(glm::ivec2 point, MOUSE_OP action)
 	else*/ 
 		if (action == SCALE)
 	{
-		double len = glm::sqrt(m_MouseStart.x * m_MouseStart.x + m_MouseStart.y * m_MouseStart.y)
-			/ glm::sqrt(point.x * point.x + point.y * point.y);
+			double a = m_MouseStart.x * m_MouseStart.x + m_MouseStart.y * m_MouseStart.y;
+			double b = point.x * point.x + point.y * point.y;
+			double len = glm::sqrt(a) / glm::sqrt(b);
 		glm::vec4 vNewRot2(0);
 		m_mThisTranf.SetPan(glm::vec3(0));
 		m_mThisTranf.SetScale((float)len);

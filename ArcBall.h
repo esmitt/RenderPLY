@@ -1,5 +1,5 @@
 #pragma once
-#include "glm\glm.hpp"
+#include "glm/glm.hpp"
 #include "ArcBallMatrix.h"
 #include "OGLBasic.h"
 

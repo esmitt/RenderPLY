@@ -1,6 +1,4 @@
-#include "stdafx.h"
 #include "ArcBallMatrix.h"
-
 
 CArcBallMatrix::CArcBallMatrix()
 {

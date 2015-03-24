@@ -30,17 +30,29 @@ class C3DModel
 {
 private:
 	CBoundingBox m_bbox;
-	std::vector<Vertex> m_vVertex;
-	std::vector<Mesh> m_vMesh;
+	static std::vector<Vertex> m_vVertex;
+	static std::vector<Mesh> m_vMesh;
 	unsigned int m_uVBO;
+	unsigned int m_uVBOIndex;
 	int m_iNPoints;
+	int m_iNTriangles;
 	GLuint m_uVAO;		//for the model
+	static Vertex m_tempVertex;
+	static Mesh m_tempMesh;
+	static int m_iTempIndex;
+protected:
+	static int vertex_cb(p_ply_argument argument);
+	static int face_cb(p_ply_argument argument);
+	static std::vector<Vertex> Helper(){ std::vector<Vertex> a; a.reserve(1); return a; }
 public:
 	C3DModel();
 	~C3DModel();
 
 	///Method to load an 3Dmodel
-	bool load(const std::string & sFilename, const CGLSLProgram & program, glm::vec3 pCenterOn = glm::vec3(0));
+	bool load(const std::string & sFilename);
+
+	//delete all buffers
+	void deleteBuffers();
 
 	///Draw the object using the VAO
 	void drawObject();
@@ -50,7 +62,5 @@ public:
 
 	///Get the lenght of the diagonal of bounding box
 	inline float getDiagonal(){return m_bbox.getDiagonal();}
-
-	void deleteBuffers();
 };
 #endif

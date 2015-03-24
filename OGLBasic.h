@@ -1,6 +1,4 @@
 #pragma once
-#define TRACE(s) printf(s);
-
 typedef unsigned char MOUSE_OP;
 const MOUSE_OP ROTATE = 0;
 const MOUSE_OP TRANSLATE = 1;
@@ -14,7 +12,7 @@ public:
 		// Instantiated on first use.
 		return instance;
 	}
-	const float fNCP = 0.01f;
+	const float fNCP = 0.01;
 	const float fFCP = 500.f;
 	const float fAngle = 45.f;
 private:

@@ -35,7 +35,7 @@ void CGLSLProgram::deleteShaders()
 		glDeleteShader(m_vIdShader[GEOMETRY]);
 		glDeleteProgram(m_uIdProgram);
 		m_uIdProgram - 1;
-		TRACE("Program deleted!\n");
+		//TRACE("Program deleted!\n");
 	}
 }
 
@@ -93,7 +93,7 @@ void CGLSLProgram::loadShader(std::string strFileName, SHADERTYPE typeShader)
 		{
 			char infoLog[1024];
 			glGetShaderInfoLog(hShader, 1024, NULL, infoLog);
-			TRACE("The shader at %s  failed to compile with the following errors : %s\n", strFileName.c_str(), infoLog);
+			//TRACE("The shader at %s  failed to compile with the following errors : %s\n", strFileName.c_str(), infoLog);
 			glDeleteShader(hShader);
 		}
 		else	//here, everything is OK
@@ -104,7 +104,7 @@ void CGLSLProgram::loadShader(std::string strFileName, SHADERTYPE typeShader)
 	}
 	else
 	{
-		TRACE("something wrong loading the shader located in %s .\n");
+		//TRACE("something wrong loading the shader located in %s .\n");
 		glDeleteShader(hShader);
 	}
 }
@@ -122,12 +122,12 @@ void CGLSLProgram::checkLinkingErrors()
 
     glGetProgramInfoLog(m_uIdProgram, infologLength, &charsWritten, infoLog);
 
-		TRACE(infoLog);
+		//TRACE(infoLog);
     delete [] infoLog;
     glGetProgramiv(m_uIdProgram, GL_LINK_STATUS, &infologLength);
     if(infologLength == GL_FALSE)
     {
-      TRACE("Program link failed exiting\n");
+      //TRACE("Program link failed exiting\n");
       exit(EXIT_FAILURE);
     }
   }

@@ -5,6 +5,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "GLSLProgram.h"
+#include "3DModel.h"
+#include "ArcBall.h"
 #include <stdlib.h>
 #include <string>
 #include <iostream>
@@ -22,42 +24,22 @@ using namespace std;
 namespace glfwFunc
 {
 	GLFWwindow* glfwWindow;
-	const unsigned int WINDOW_WIDTH = 512;
-	const unsigned int WINDOW_HEIGHT = 512;
+	const unsigned int WINDOW_WIDTH = 1024;
+	const unsigned int WINDOW_HEIGHT = 650;
 	const float NCP = 0.01f;
 	const float FCP = 52.f;
 	const float fAngle = 45.f;
 	string strNameWindow = "Hello GLFW";
+	glm::vec4 m_vec4ColorAB;
+	glm::vec4 m_vec4ColorC;
+	C3DModel m_model, m_cone;
+	CArcBall m_arcball;
+	bool m_bLeftButton;
+	bool m_bFlag;
+	glm::ivec2 m_MousePoint(0);
 
 	CGLSLProgram m_program;
 	glm::mat4x4 mProjMatrix, mModelViewMatrix;
-	GLuint m_idVAO;
-
-	///< Function to build a simple triangle
-	void buildTriangle()
-	{
-		float vfVertexT[] = { -0.6f, -0.4f, 0.f, 0.6f, -0.4f, 0.f, 0.f, 0.6f, 0.f };
-		float vfColorT[] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
-		GLuint idVBO;
-
-		glGenVertexArrays(1, &m_idVAO);
-		glBindVertexArray(m_idVAO);
-
-		glGenBuffers(1, &idVBO);
-		glBindBuffer(GL_ARRAY_BUFFER, idVBO);
-
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vfVertexT) + sizeof(vfColorT), NULL, GL_STATIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vfVertexT), vfVertexT);
-		glBufferSubData(GL_ARRAY_BUFFER, sizeof(vfVertexT), sizeof(vfColorT), vfColorT);
-
-		glEnableVertexAttribArray(m_program.getLocation("vVertex"));
-		glVertexAttribPointer(m_program.getLocation("vVertex"), 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); //Vertex
-		glEnableVertexAttribArray(m_program.getLocation("vColor"));
-		glVertexAttribPointer(m_program.getLocation("vColor"), 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(vfVertexT))); //Colors
-
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindVertexArray(0);
-	}
 
 	///
 	/// Init all data and variables.
@@ -66,8 +48,11 @@ namespace glfwFunc
 	bool initialize()
 	{
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
+		//glEnable(GL_CULL_FACE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glewExperimental = GL_TRUE;
+		m_bLeftButton = m_bFlag = false;
 		if (glewInit() != GLEW_OK)
 		{
 			cout << "- glew Init failed :(" << endl;
@@ -83,11 +68,15 @@ namespace glfwFunc
 		m_program.create_link();
 		m_program.enable();
 		m_program.addAttribute("vVertex");
-		m_program.addAttribute("vColor");
 		m_program.addUniform("mProjection");
 		m_program.addUniform("mModelView");
+		m_program.addUniform("vec4Color");
 		m_program.disable();
-		buildTriangle();
+		glPolygonMode(GL_FRONT, GL_LINE);
+		m_model.load("geometry/surfaceAB.ply");
+		m_cone.load("geometry/sphere.ply");
+		m_vec4ColorAB = glm::vec4(1, 0, 0, 0.4);
+		m_vec4ColorC = glm::vec4(1, 1, 0, 1);
 		return true;
 	}
 
@@ -95,6 +84,44 @@ namespace glfwFunc
 	void errorCB(int error, const char* description)
 	{
 		cout << description << endl;
+	}
+
+	void onMouseMove(GLFWwindow *window, double xpos, double ypos)
+	{
+		if (m_bLeftButton)
+		{
+			if (!m_bFlag)
+			{
+				m_bFlag = true;
+				m_arcball.OnMouseDown(glm::ivec2(xpos, ypos));
+			}
+			else
+			{
+				m_MousePoint.x = xpos;
+				m_MousePoint.y = ypos;
+				m_arcball.OnMouseMove(m_MousePoint, ROTATE);
+			}
+		}
+	}
+
+	void onMouseDown(GLFWwindow* window, int button, int action, int mods)
+	{
+		if (action == GLFW_PRESS)
+		{
+			if (button == GLFW_MOUSE_BUTTON_LEFT)
+			{
+				m_bLeftButton = true;
+			}
+		}
+		else if (action == GLFW_RELEASE)
+		{
+			if (button == GLFW_MOUSE_BUTTON_LEFT)
+			{
+				m_bLeftButton = false;
+				m_bFlag = false;
+				m_arcball.OnMouseUp(m_MousePoint);
+			}
+		}
 	}
 
 	///
@@ -126,22 +153,23 @@ namespace glfwFunc
 		float ratio = iWidth / float(iHeight);
 		glViewport(0, 0, iWidth, iHeight);
 		mProjMatrix = glm::perspective(fAngle, ratio, NCP, FCP);
+		m_arcball.Resize(iWidth, iHeight);
 	}
 
 	///< The main rendering function.
 	void draw()
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glClearColor(0.15f, 0.15f, 0.15f, 1.f);
+		glClearColor(0.15f, 0.15f, 0.15f, 0.f);
 
-		mModelViewMatrix = glm::translate(glm::mat4(), glm::vec3(0, 0, -2.f));
-
+		mModelViewMatrix = glm::translate(glm::mat4(), glm::vec3(0, 0, -6.f)) * m_arcball.GetTransformation();
 		m_program.enable();
-		glUniformMatrix4fv(m_program.getLocation("mModelView"), 1, GL_FALSE, glm::value_ptr(mModelViewMatrix));
-		glUniformMatrix4fv(m_program.getLocation("mProjection"), 1, GL_FALSE, glm::value_ptr(mProjMatrix));
-		glBindVertexArray(m_idVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
-		glBindVertexArray(0);
+			glUniformMatrix4fv(m_program.getLocation("mModelView"), 1, GL_FALSE, glm::value_ptr(mModelViewMatrix));
+			glUniformMatrix4fv(m_program.getLocation("mProjection"), 1, GL_FALSE, glm::value_ptr(mProjMatrix));
+			glUniform4fv(m_program.getLocation("vec4Color"), 1, glm::value_ptr(m_vec4ColorAB));
+			m_model.drawObject();
+			glUniform4fv(m_program.getLocation("vec4Color"), 1, glm::value_ptr(m_vec4ColorC));
+			m_cone.drawObject();
 		m_program.disable();
 
 		glfwSwapBuffers(glfwFunc::glfwWindow);
@@ -150,7 +178,8 @@ namespace glfwFunc
 	/// Here all data must be destroyed + glfwTerminate
 	void destroy()
 	{
-		if (glIsVertexArray(m_idVAO)) glDeleteVertexArrays(1, &m_idVAO);
+		m_model.deleteBuffers();
+		m_cone.deleteBuffers();
 		glfwDestroyWindow(glfwFunc::glfwWindow);
 		glfwTerminate();
 	}
@@ -171,6 +200,8 @@ int main(int argc, char** argv)
 	glfwFunc::resizeCB(glfwFunc::glfwWindow, glfwFunc::WINDOW_WIDTH, glfwFunc::WINDOW_HEIGHT);	//just the 1st time
 	glfwSetKeyCallback(glfwFunc::glfwWindow, glfwFunc::keyboardCB);
 	glfwSetWindowSizeCallback(glfwFunc::glfwWindow, glfwFunc::resizeCB);
+	glfwSetMouseButtonCallback(glfwFunc::glfwWindow, glfwFunc::onMouseDown);
+	glfwSetCursorPosCallback(glfwFunc::glfwWindow, glfwFunc::onMouseMove);
 	// main loop!
 	while (!glfwWindowShouldClose(glfwFunc::glfwWindow))
 	{
