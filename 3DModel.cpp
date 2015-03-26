@@ -98,7 +98,6 @@ int C3DModel::face_cb(p_ply_argument argument) {
 ///
 bool C3DModel::load(const std::string & sFilename)
 {
-
 	//TRACE("loading the file %s\n", sFilename.c_str());
 	long nvertices, ntriangles;
 	p_ply ply = ply_open(sFilename.c_str(), NULL, 0, NULL);
@@ -111,7 +110,9 @@ bool C3DModel::load(const std::string & sFilename)
 	//printf("%ld\n%ld\n", nvertices, ntriangles);
 	if (!ply_read(ply)) return false;
 	ply_close(ply);
+
 	m_iNPoints = m_vVertex.size();
+	m_iNTriangles = m_vMesh.size();
 
 	//creating the VAO for the model
 	glGenVertexArrays(1, &m_uVAO);
@@ -122,10 +123,10 @@ bool C3DModel::load(const std::string & sFilename)
 		glGenBuffers(1, &m_uVBOIndex);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_uVBO);
-		glBufferData(GL_ARRAY_BUFFER, m_vVertex.size() * sizeof(Vertex), &m_vVertex[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_iNPoints * sizeof(Vertex), &m_vVertex[0], GL_STATIC_DRAW);
 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_uVBOIndex);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_vMesh.size() * sizeof(Mesh), &m_vMesh[0], GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_iNTriangles * sizeof(Mesh), &m_vMesh[0], GL_STATIC_DRAW);
 
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), BUFFER_OFFSET(0)); //Vertex
 		glEnableVertexAttribArray(0);
@@ -133,6 +134,7 @@ bool C3DModel::load(const std::string & sFilename)
 	glBindVertexArray(0);	//VAO
 
 	m_vVertex.clear();
+	m_vMesh.clear();
 	return true;
 }
 
@@ -142,6 +144,6 @@ bool C3DModel::load(const std::string & sFilename)
 void C3DModel::drawObject()
 {
 	glBindVertexArray(m_uVAO);
-		glDrawElements(GL_TRIANGLES, m_vMesh.size()*3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glDrawElements(GL_TRIANGLES, m_iNTriangles * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 	glBindVertexArray(0);
 }
