@@ -1,5 +1,8 @@
 #ifndef RPLY_H
 #define RPLY_H
+
+
+
 /* ----------------------------------------------------------------------
  * RPly library, read/write PLY files
  * Diego Nehab, IMPA
